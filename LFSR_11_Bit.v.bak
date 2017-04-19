@@ -8,9 +8,9 @@ module LFSR_11_Bit (
 	reg	[10:0]	buffer;
 	reg				bit_one;
 	
-	always @(posedge clock or posedge reset)
+	always @(posedge clock)
 	begin
-		if (reset == 1'b1) begin
+		if (reset == 1'b0) begin
 			buffer = seed;
 		end else begin
 			bit_one = buffer[10] ^ buffer[6];

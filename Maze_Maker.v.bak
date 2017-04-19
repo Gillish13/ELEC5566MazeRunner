@@ -99,15 +99,13 @@ module Maze_Maker # (
 				x = 32'd1;
 				y = 32'd2;
 				
-				//next_state <= A;
-				next_state <= C;
-
+				next_state <= A;
 			end
 		endcase
 	end
 	
-	always @(posedge clock or posedge reset or posedge gen_start) begin
-		if (reset == 1'b1 || gen_start == 1'b1) begin
+	always @(posedge clock or negedge reset or posedge gen_start) begin
+		if (reset == 1'b0 || gen_start == 1'b1) begin
 			state <= D;
 		end else begin
 			state <= next_state;
