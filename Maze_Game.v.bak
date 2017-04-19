@@ -1,0 +1,7 @@
+module Maze_Game # (
+	parameter WIDTH 	= 10,
+	parameter HEIGHT 	= 10
+)(
+
+
+);

@@ -1,0 +1,8 @@
+module Maze_Input # (
+	parameter WIDTH = 10,
+	parameter HEIGHT = 10
+)(
+
+
+
+);
