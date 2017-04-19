@@ -4,7 +4,7 @@ module Maze_Maker # (
 )(
 	input 									gen_start,
 
-	input		[7:0]							seed,
+	input		[10:0]						seed,
 	input										reset,
 	input										clock,
 	
@@ -26,9 +26,9 @@ module Maze_Maker # (
 	
 	reg									finished;
 	
-	wire	[7:0]							rand;
+	wire	[10:0]						rand;
 	
-	LFSR_8_Bit prng (
+	LFSR_11_Bit prng (
 		.seed		(seed		),
 		.reset	(reset	),
 		.clock	(clock	),
