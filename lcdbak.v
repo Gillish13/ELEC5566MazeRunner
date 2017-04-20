@@ -131,6 +131,9 @@ always @(state or gen_end) begin
 			charXCord <= 4'b0;
 			charYCord <= 4'b0;
 			
+			// reset flags
+			startChar <= 1'b0;
+			
 			// start the generation of the maze
 			// gen_start <= 1'b1;
 			//reset <= 1'b1;
@@ -144,20 +147,7 @@ always @(state or gen_end) begin
 			
 			maze_tracker = maze_tracker + 11'd1;
 			
-			charYCord <= 0;
-			charXCord <= 0;
-			
-			xCharOrigin = xCharOrigin + 8;
-			
-			if (xCharOrigin > (width * 8)) begin
-				yCharOrigin = yCharOrigin + 8;
-			end
-			
-			if (yCharOrigin > (height * 8)) begin
-				next_state <= E;
-			end else begin
-				next_state <= C;
-			end
+			next_state <= C;
 		end
 		
 		// Wait
@@ -167,71 +157,129 @@ always @(state or gen_end) begin
 		
 		// Draw data
 		D : begin
-			
+		
 			// first confirm that the LCD is ready to receive data
-			if (pixelReady) begin
-				// Pixel ready to be drawn
+			if (pixelReady && (xAddr <(WIDTH)) && (yAddr < (HEIGHT)) && maze_tracker < (width*height)) begin
+			
+				// check if its the first character to be drawn
+				if (startChar == 0) begin
+					// ensure this happens only once
+					startChar <= 1'b1;
 				
-				// If in bounds
-				if ((xAddr <(WIDTH)) && (yAddr < (HEIGHT)) && maze_tracker < (width*height)) begin
-					
-					
-					pixelData[15:11] <= 5'b00000;	// red pixel data
-					pixelData[10: 5] <= 6'b111111;	// green pixel data
-					pixelData[4:0] <= 5'b00000;	// set pixel data to zero
-					
-					/*
 					if (maze_address_data == 1'b1) begin
 						// Draw wall
+						
 						// set the pixel data to black
 						pixelData[15:11] <= 5'b0;	// red pixel data
 						pixelData[10: 5] <= 6'b0;	// green pixel data
 						pixelData[4:0] <= 5'b0;	// set pixel data to zero
 					end else begin
 						// Draw floor
+						
 						// set color to green
 						pixelData[15:11] <= 5'b00000;	// red pixel data
 						pixelData[10: 5] <= 6'b111111;	// green pixel data
 						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
 					end
-					*/
 					
-					/*
-					// If the current tile's x pixel position >= 8
-					if (charXCord + 1 >= 8) begin
-						charXCord <= 0;
-						// If the current tile's y pixel position >= 8
-						if (charYCord + 1 >= 8) begin
-							charYCord = 0;
-						end else begin
-							charYCord = charYCord + 1;
-						end
-					end else begin
-						charXCord = charXCord + 1;
-					end
-					*/
-					
-					if (charXCord + 1 >= 8 && charYCord + 1 >= 8) begin
-						next_state <= E;
-					end else if (charXCord + 1 >= 8) begin
-						charXCord <= 0;
-						charYCord <= charYCord + 1;
-						
-						next_state <= G;
-					end else begin
-						charXCord <= charXCord + 1;
-						next_state <= G;
-					end
-					
+					// increment the maze_tracker
+					next_state <= B;
 				end
-				else begin
-					next_state <= E;
-				end
+			
+				// check if the end of a character is reached
+				if (charXCord == 8 && charYCord == 8) begin
 				
-			end else begin
-				// Wait unitl pixel is ready to be drawn
-				next_state <= D;
-			end
+					/**
+					
+					// check if this is NOT the last character on x-axis
+					if (xAddr < (WIDTH-8)) begin
+				
+						// move character width
+						xCharOrigin <= xCharOrigin + 5'd8;
+						
+						// reset character x coordinate
+						charXCord <= 4'b0;
+						// reset character y coordinate
+						charYCord <= 4'b0;
+						
+						// increment maze_tracker
+						next_state <= B;
+						
+					end else begin
+						// move character width
+						xCharOrigin <= 5'd0;
+						yCharOrigin <= yCharOrigin + 6'd8;
+						
+						// check if this is NOT the end of the screen
+						if (yAddr < (HEIGHT-8)) begin
+							yAddr <= yCharOrigin + 6'd8;
+							xAddr <= 5'd0;
+							
+							// increment mazetracker
+							next_state <= B;
+						end else begin
+							// frame is complete
+							next_state <= E;
+						end
+		
+						// reset character x coordinate
+						charXCord <= 4'b0;
+						// reset character y coordinate
+						charYCord <= 4'b0;
+						
+					end
+					
+					// determine the color of the character
+					if (maze_address_data == 1'b1) begin
+						// Draw wall
+						
+						// set the pixel data to black
+						pixelData[15:11] <= 5'b0;	// red pixel data
+						pixelData[10: 5] <= 6'b0;	// green pixel data
+						pixelData[4:0] <= 5'b0;	// set pixel data to zero
+					end else begin
+						// Draw floor
+						
+						// set color to green
+						pixelData[15:11] <= 5'b00000;	// red pixel data
+						pixelData[10: 5] <= 6'b111111;	// green pixel data
+						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
+					end
+					
+					if (xAddr < (WIDTH-8)) begin
+						xAddr <= xCharOrigin + 5'd8;
+						yAddr <= yCharOrigin;
+					end 
+					
+					
+					**/
+					
+					next_state <= E;
+					
+				end 
+				// check is at the end of character x-axis
+				else if (charXCord == 8) begin
+					xAddr <= xCharOrigin;		// place x coordinate cursor at x origin of character
+				
+					// reset character x coordinate to origin
+					charXCord <= 4'b0;
+					yAddr <= charYCord + yCharOrigin;
+					charYCord <= charYCord + 4'b1;
+					
+					//next_state <= D;
+				end
+				// otherwise just increment the pixels on the x-axis
+				else begin
+					// ensure x-address is within bounds
+					if (xAddr < (WIDTH)) begin
+						xAddr <= charXCord + xCharOrigin;
+						charXCord <= charXCord + 4'b1;
+					end	
+					
+					//next_state <= D;
+				end
+			
+			end 
 		end
 		
 		// End
@@ -246,7 +294,7 @@ always @(state or gen_end) begin
 		
 		// Wait until generation has finished
 		F : begin
-			if (gen_end == 1'b1 && resetApp == 1'b1) begin
+			if (gen_end == 1'b1) begin
 				next_state <= A;
 			end
 			else begin
@@ -254,16 +302,8 @@ always @(state or gen_end) begin
 			end
 		end
 		
-		// Set cursor address
 		G : begin
-		// first confirm that the LCD is ready to receive data
-			if (pixelReady) begin
-				yAddr = yCharOrigin + charYCord;
-				xAddr = xCharOrigin + charXCord;
-				next_state <= D;
-			end else begin
-				next_state <= G;
-			end
+			next_state <= G;
 		end
 		
 	endcase
