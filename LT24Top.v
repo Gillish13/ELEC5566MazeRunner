@@ -109,78 +109,82 @@ LT24Display #(
     .LT24_LCD_ON (LT24_LCD_ON)
 );
 
+reg increment_cursor;
 
+// X Counter
+always @ (posedge clock or posedge resetApp) begin
+    if (resetApp) begin
+        xAddr <= 8'b0;
+    end else if (pixelReady && increment_cursor == 1'b1) begin
+        if (xAddr < (WIDTH-1)) begin
+            xAddr <= xAddr + 8'd1;
+        end else begin
+            xAddr <= 8'b0;
+        end
+    end
+end
 
-// Wait to get data
+// Y Counter
+always @ (posedge clock or posedge resetApp) begin
+    if (resetApp) begin
+        yAddr <= 9'b0;
+    end else if (pixelReady && (xAddr == (WIDTH-1)) && increment_cursor == 1'b1) begin
+        if (yAddr < (HEIGHT-1)) begin
+            yAddr <= yAddr + 9'd1;
+        end else begin
+            yAddr <= 9'b0;
+        end
+    end
+end
 
-always @(state or gen_end) begin
+// Maze tracker counter + registers
+reg increment_maze_tracker;
+
+always @(posedge clock or posedge resetApp) begin
+	if (resetApp) begin
+		maze_tracker = 11'd0;
+	end else if (increment_maze_tracker == 1'b1 && maze_tracker < (width * height)) begin
+		maze_tracker <= (xAddr / 8) + (width * (yAddr/ 8));
+	end
+end
+
+always @(posedge clock) begin
 	case(state)
-		// Initilize
+		// Do nothing
 		A : begin
-			// Do initialising stuff here
-			
-			// set cursor at the origin
-			yAddr <= 9'b0;	// set y coordinate to zero
-			xAddr <= 8'b0;	// set x coordinate to zero
-			
-			// reset characters
-			xCharOrigin <= 5'b0;
-			yCharOrigin <= 6'b0;
-			
-			//
-			charXCord <= 4'b0;
-			charYCord <= 4'b0;
-			
-			// start the generation of the maze
-			// gen_start <= 1'b1;
-			//reset <= 1'b1;
-			maze_tracker <= 11'b0;
-			
-			next_state <= C;
-		end
-		
-		// Request data
-		B : begin
-			
-			maze_tracker = maze_tracker + 11'd1;
-			
-			charYCord <= 0;
-			charXCord <= 0;
-			
-			xCharOrigin = xCharOrigin + 8;
-			
-			if (xCharOrigin > (width * 8)) begin
-				yCharOrigin = yCharOrigin + 8;
-			end
-			
-			if (yCharOrigin > (height * 8)) begin
-				next_state <= E;
+			increment_maze_tracker <= 1'b0;
+			increment_cursor <= 1'b0;
+
+			if (resetApp == 1'b0 && gen_end == 1'b1) begin
+				state <= C;
 			end else begin
-				next_state <= C;
+				state <= A;
 			end
 		end
 		
-		// Wait
-		C : begin
-			next_state <= D;
+		// End Request data
+		B : begin
+			increment_maze_tracker <= 0;
+			state <= C;
 		end
 		
-		// Draw data
+		// Wait to recieve data + begin to increment cursor
+		C : begin
+			increment_cursor <= 1'b1;
+			state <= D;
+		end
+		
+		// Draw pixel if ready + stop incrementing the cursor + begin requesting maze data
 		D : begin
 			
-			// first confirm that the LCD is ready to receive data
-			if (pixelReady) begin
-				// Pixel ready to be drawn
+			if (pixelReady == 1'b1) begin
+				increment_cursor <= 1'b0;
+				increment_maze_tracker <= 1'b1;
 				
-				// If in bounds
-				if ((xAddr <(WIDTH)) && (yAddr < (HEIGHT)) && maze_tracker < (width*height)) begin
-					
-					
-					pixelData[15:11] <= 5'b00000;	// red pixel data
-					pixelData[10: 5] <= 6'b111111;	// green pixel data
-					pixelData[4:0] <= 5'b00000;	// set pixel data to zero
-					
-					/*
+				// Draw pixel
+				if (xAddr < (WIDTH - 1) && yAddr < (HEIGHT - 1)) begin
+				
+
 					if (maze_address_data == 1'b1) begin
 						// Draw wall
 						// set the pixel data to black
@@ -194,92 +198,21 @@ always @(state or gen_end) begin
 						pixelData[10: 5] <= 6'b111111;	// green pixel data
 						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
 					end
-					*/
 					
-					/*
-					// If the current tile's x pixel position >= 8
-					if (charXCord + 1 >= 8) begin
-						charXCord <= 0;
-						// If the current tile's y pixel position >= 8
-						if (charYCord + 1 >= 8) begin
-							charYCord = 0;
-						end else begin
-							charYCord = charYCord + 1;
-						end
-					end else begin
-						charXCord = charXCord + 1;
-					end
-					*/
 					
-					if (charXCord + 1 >= 8 && charYCord + 1 >= 8) begin
-						next_state <= E;
-					end else if (charXCord + 1 >= 8) begin
-						charXCord <= 0;
-						charYCord <= charYCord + 1;
-						
-						next_state <= G;
-					end else begin
-						charXCord <= charXCord + 1;
-						next_state <= G;
-					end
-					
+					state <= B;
+				end else begin
+					state <= B;
 				end
-				else begin
-					next_state <= E;
-				end
-				
 			end else begin
-				// Wait unitl pixel is ready to be drawn
-				next_state <= D;
-			end
-		end
-		
-		// End
-		E : begin
-			if (gen_end == 1'b1) begin
-				next_state <= E;
-			end
-			else begin
-				next_state <= F;
-			end
-		end
-		
-		// Wait until generation has finished
-		F : begin
-			if (gen_end == 1'b1 && resetApp == 1'b1) begin
-				next_state <= A;
-			end
-			else begin
-				next_state <= F;
-			end
-		end
-		
-		// Set cursor address
-		G : begin
-		// first confirm that the LCD is ready to receive data
-			if (pixelReady) begin
-				yAddr = yCharOrigin + charYCord;
-				xAddr = xCharOrigin + charXCord;
-				next_state <= D;
-			end else begin
-				next_state <= G;
+				// Keep in this state until pixel is ready to be drawn
+				state <= D;
 			end
 		end
 		
 	endcase
 end
 
-	// Change state of the state machine
-	always @(posedge clock or posedge reset) begin
-		if (reset) begin
-			state <= F;
-		end else begin
-			state <= next_state;
-		end
-	end
-
-assign led_bus[9] = gen_end;
-assign led_bus[2:0] = state;
 assign reset = ~globalReset;
 
 endmodule

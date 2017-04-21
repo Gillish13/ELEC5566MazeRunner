@@ -55,31 +55,61 @@ module Maze_Maker # (
 		.q			(maze_address_data	)
 	);
 	
+	reg increment;
+	
+	// X counter
+	always @(posedge clock or posedge reset) begin
+		if (reset) begin
+			x <= -1;
+		end else if (increment == 1'b1) begin
+			if (x < WIDTH) begin
+				x <= x + 32'd1;
+			end else begin
+				x <= -1;
+			end
+		end
+	end
+	
+	// Y counter
+	always @(posedge clock or posedge reset) begin
+		if (reset) begin
+			y <= 0;
+		end else if (increment == 1'b1 && x == (WIDTH)) begin
+			if (y < (HEIGHT-1)) begin
+            y <= y + 32'd1;
+        end else begin
+            y <= 32'b0;
+        end
+		end
+	end
 	
 	always @(state or maze_address) begin
 		case(state)
 			// Initilize
 			A : begin
-				x = -1;
-				y = 32'd0;
+				//x = -1;
+				//y = 32'd0;
 				finished = 1'b0;
 				last_wall_x = -1;
 				wren = 1'b1;
 				make_opening = 1'b0;
+				
+				increment <= 1;
 				
 				next_state <= B;
 			end
 			
 			// Set up tile
 			B : begin
+				increment <= 0;
 				// Check if x posistion is in bounds
-				if (x >= WIDTH) begin
-						address = (WIDTH * (y - 1)) + (rand % ((WIDTH - last_wall_x) / 2) * 2) + last_wall_x + 1;
+				if (x >= WIDTH) begin				
+						address = (WIDTH * (y - 2)) + (rand % ((WIDTH - last_wall_x) / 2) * 2) + last_wall_x + 1;
 						data = FLOOR;
 						
 						// Set cursor to be at the start of the next row
-						x = -1;
-						y = y + 32'd1;
+						//x = -1;
+						//y = y + 32'd1;
 						
 						// Reset the x coordinate of the last made wall
 						last_wall_x = -1;
@@ -127,6 +157,8 @@ module Maze_Maker # (
 			
 			// Iterate through the maze's array + make openings in the row above
 			C : begin
+				increment <= 1;
+			
 				if (make_opening == 1'b1) begin
 					make_opening = 1'b0;
 					if (x == 1) begin
@@ -142,21 +174,22 @@ module Maze_Maker # (
 				end
 				
 				// Check if y position is in bounds
-				if (y >= HEIGHT) begin
+				if (y >= HEIGHT - 1) begin
+					increment <= 0;
 					// End generating
 					next_state <= D;
 				end else begin
-					x = x + 32'd1;
+					//x = x + 32'd1;
 					next_state <= B;
 				end
 				
 			end
 			// End generate
 			D : begin
+				finished = 1'b1;
 				wren = 1'b0;
 				
-				finished <= 1'b1;
-				address <= maze_address;
+				address = maze_address;
 				
 				next_state <= D;
 			end
@@ -172,6 +205,7 @@ module Maze_Maker # (
 		end
 	end
 	
+	//assign maze = buffer;
 	assign gen_end = finished;
 	
 endmodule
