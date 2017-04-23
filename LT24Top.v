@@ -165,6 +165,11 @@ always @(posedge clock) begin
 		// End Request data
 		B : begin
 			increment_maze_tracker <= 0;
+			state <= E;
+		end
+		
+		// Wait to recieve data
+		E : begin
 			state <= C;
 		end
 		
