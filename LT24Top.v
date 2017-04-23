@@ -112,6 +112,23 @@ LT24Display #(
     .LT24_LCD_ON (LT24_LCD_ON)
 );
 
+wire [5:0] pixelAddress;
+wire [15: 0] floor_pixelInfo;
+wire [15: 0] wall_pixelInfo;
+floor_rom floor_data(
+	.clock		  (clock),
+	.address		  (pixelAddress),
+	.q				  (floor_pixelInfo)
+);
+
+wall_rom wall_data(
+	.clock		  (clock),
+	.address		  (pixelAddress),
+	.q				  (wall_pixelInfo)
+);
+
+assign pixelAddress = ((xAddr % 8)+((yAddr % 8)*8));
+
 reg increment_cursor;
 
 // X Counter
@@ -214,15 +231,21 @@ always @(posedge clock) begin
 					if (maze_address_data == 1'b1) begin
 						// Draw wall
 						// set the pixel data to black
+						/**
 						pixelData[15:11] <= 5'b0;	// red pixel data
 						pixelData[10: 5] <= 6'b0;	// green pixel data
 						pixelData[4:0] <= 5'b0;	// set pixel data to zero
+						**/
+						pixelData <= wall_pixelInfo;
 					end else begin
 						// Draw floor
+						/**
 						// set color to green
 						pixelData[15:11] <= 5'b00000;	// red pixel data
 						pixelData[10: 5] <= 6'b111111;	// green pixel data
 						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
+						**/
+						pixelData <= floor_pixelInfo;
 					end
 					
 					

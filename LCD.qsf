@@ -88,6 +88,18 @@ set_location_assignment PIN_V18 -to led_bus[3]
 set_location_assignment PIN_V17 -to led_bus[2]
 set_location_assignment PIN_W16 -to led_bus[1]
 set_location_assignment PIN_V16 -to led_bus[0]
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
+set_global_assignment -name STATE_MACHINE_PROCESSING "USER-ENCODED"
+set_location_assignment PIN_AA15 -to gen_start_sw
+set_global_assignment -name MIF_FILE wall.mif
+set_global_assignment -name MIF_FILE floor.mif
+set_global_assignment -name MIF_FILE character.mif
+set_global_assignment -name VERILOG_FILE wall_rom.v
+set_global_assignment -name QIP_FILE wall_rom.qip
+set_global_assignment -name VERILOG_FILE floor_rom.v
+set_global_assignment -name QIP_FILE floor_rom.qip
+set_global_assignment -name VERILOG_FILE character_rom.v
+set_global_assignment -name QIP_FILE character_rom.qip
 set_global_assignment -name VERILOG_FILE RAM.v
 set_global_assignment -name QIP_FILE RAM.qip
 set_global_assignment -name VERILOG_FILE LFSR_11_Bit.v
@@ -96,7 +108,5 @@ set_global_assignment -name VERILOG_FILE LT24Display.v
 set_global_assignment -name VERILOG_FILE Maze_Maker.v
 set_global_assignment -name TCL_SCRIPT_FILE set_LCD_pin_locs.tcl
 set_global_assignment -name SDC_FILE LT24Display.sdc
-set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
-set_global_assignment -name STATE_MACHINE_PROCESSING "USER-ENCODED"
-set_location_assignment PIN_AA15 -to gen_start_sw
+set_global_assignment -name CDF_FILE Chain1.cdf
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
