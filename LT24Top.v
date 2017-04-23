@@ -32,7 +32,7 @@ module LT24Top (
 	localparam G = 3'b110;
 	
 	reg [2:0]	state;
-	reg [2:0]	next_state;
+	//reg [2:0]	next_state;
 	
 // Flags
 reg startChar;	// sets the initial character
