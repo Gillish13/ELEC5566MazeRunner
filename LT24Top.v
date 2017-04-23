@@ -5,6 +5,9 @@ module LT24Top (
     input              clock,
     // - Global Reset
     input              globalReset,
+	 
+	 input gen_start_sw,
+	 
     // - Application Reset - for debug
     output             resetApp,
     //
@@ -52,12 +55,12 @@ localparam HEIGHT = 320;
 
 // Maze making variables
 
-localparam height = 10;
+localparam height = 40;
 localparam width = 30;
 
 //reg [(width * height)-1:0] maze_wire_reg;
 //wire [(width * height)-1:0] maze_wire;
-reg gen_start;
+wire gen_start;
 //reg reset;
 wire gen_end;
 reg gen_end_reg;
@@ -71,7 +74,7 @@ Maze_Maker # (
 	.WIDTH  (width  ),
 	.HEIGHT (height )
 ) maze_maker(
-	.gen_start  			(1'b0						),
+	.gen_start  			(gen_start				),
 	.seed						(11'b10101010101		),
 	.reset					(reset					),
 	.clock					(clock					),
@@ -138,38 +141,56 @@ always @ (posedge clock or posedge resetApp) begin
 end
 
 // Maze tracker counter + registers
-reg increment_maze_tracker;
+//reg increment_maze_tracker;
 
+/*
 always @(posedge clock or posedge resetApp) begin
 	if (resetApp) begin
-		maze_tracker = 11'd0;
-	end else if (increment_maze_tracker == 1'b1 && maze_tracker < (width * height)) begin
+		maze_tracker <= 11'd0;
+	end else if (increment_maze_tracker == 1'b1) begin
 		maze_tracker <= (xAddr / 8) + (width * (yAddr/ 8));
 	end
 end
+*/
 
 always @(posedge clock) begin
 	case(state)
 		// Do nothing
 		A : begin
-			increment_maze_tracker <= 1'b0;
+			//increment_maze_tracker <= 1'b0;
 			increment_cursor <= 1'b0;
+			maze_tracker <= 0;
 
-			if (resetApp == 1'b0 && gen_end == 1'b1) begin
+			if (resetApp == 1'b1 && gen_end == 1'b1) begin
 				state <= C;
 			end else begin
 				state <= A;
 			end
 		end
 		
-		// End Request data
+		// Request data
 		B : begin
-			increment_maze_tracker <= 0;
+			if (xAddr < WIDTH - 1 && yAddr < HEIGHT - 1) begin
+				maze_tracker <= ((xAddr + 1) / 8) + (width * ((yAddr + 1) / 8));
+			end else if (yAddr < HEIGHT - 1) begin
+				maze_tracker <= (width * ((yAddr + 1) / 8));
+			end else begin
+				maze_tracker <= 0;
+			end
+			
 			state <= E;
 		end
 		
 		// Wait to recieve data
 		E : begin
+			state <= F;
+		end
+		
+		F : begin
+			state <= G;
+		end
+		
+		G : begin
 			state <= C;
 		end
 		
@@ -184,7 +205,7 @@ always @(posedge clock) begin
 			
 			if (pixelReady == 1'b1) begin
 				increment_cursor <= 1'b0;
-				increment_maze_tracker <= 1'b1;
+				//increment_maze_tracker <= 1'b1;
 				
 				// Draw pixel
 				if (xAddr < (WIDTH - 1) && yAddr < (HEIGHT - 1)) begin
@@ -219,5 +240,6 @@ always @(posedge clock) begin
 end
 
 assign reset = ~globalReset;
+assign gen_start = ~gen_start_sw;
 
 endmodule

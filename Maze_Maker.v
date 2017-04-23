@@ -103,6 +103,66 @@ module Maze_Maker # (
 			B : begin
 				increment <= 0;
 
+				if (y % 2 == 1) begin
+					address = (WIDTH * y) + x;
+					data = WALL;
+				end else if (y % 2 == 0) begin
+					address = (WIDTH * y) + x;
+					data = FLOOR;
+				end
+				
+				next_state <= C;
+			end
+			
+			
+			// Iterate through the maze's array + make openings in the row above
+			C : begin
+				increment <= 1;
+				
+				// Check if y position is in bounds
+				if (y >= HEIGHT - 1 && x >= WIDTH - 1) begin
+					increment <= 0;
+					// End generating
+					next_state <= D;
+				end else begin
+					//x = x + 32'd1;
+					next_state <= B;
+				end
+				
+			end
+			// End generate
+			D : begin
+				finished = 1'b1;
+				wren = 1'b0;
+				
+				address = maze_address;
+				
+				next_state <= D;
+			end
+		endcase
+	end
+	
+	/*
+	always @(state or maze_address) begin
+		case(state)
+			// Initilize
+			A : begin
+				//x = -1;
+				//y = 32'd0;
+				finished = 1'b0;
+				last_wall_x = -1;
+				wren = 1'b1;
+				make_opening = 1'b0;
+				
+				increment <= 1;
+				
+				next_state <= B;
+			end
+			
+			// Set up tile
+			B : begin
+				increment <= 0;
+
 				// Create exit
 				if (((x == WIDTH - 1 && (WIDTH - 1) % 2 == 0) || (x == WIDTH - 2 && (WIDTH - 2) % 2 == 0)) && y == HEIGHT - 1) begin
 					address = (WIDTH * y) + x;
@@ -194,6 +254,7 @@ module Maze_Maker # (
 			end
 		endcase
 	end
+	*/
 	
 	// Change state of the state machine
 	always @(posedge clock or posedge reset or posedge gen_start) begin
