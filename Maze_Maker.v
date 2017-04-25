@@ -9,8 +9,10 @@ module Maze_Maker # (
 	input					clock,
 	
 	input		[10:0]	maze_address,
+	input		[10:0]	maze_input_address,
 	
 	output				maze_address_data,
+	output 				maze_input_data,
 	output				gen_end
 );
 
@@ -51,11 +53,14 @@ module Maze_Maker # (
 	
 	
 	RAM maze_ram (
-		.address	(address					),
-		.clock	(clock					),
-		.data		(data						),
-		.wren		(wren						),
-		.q			(maze_address_data	)
+		.address_a	(address					),
+		.address_b	(maze_input_address	),
+		.clock		(clock					),
+		.data_a		(data						),
+		.wren_a		(wren						),
+		.wren_b		(1'b0						),
+		.q_a			(maze_address_data	),
+		.q_b			(maze_input_data		)
 	);
 	
 	reg increment;
@@ -166,8 +171,19 @@ module Maze_Maker # (
 					end
 					
 					if (x == 0 && y % 2 == 1) begin
-						address <= (WIDTH * (y - 2)) + ((rand % ((WIDTH - last_wall_x) / 2)) * 2) + last_wall_x + 1;
-						data <= FLOOR;
+						
+						if (x - last_wall_x == 2) begin
+							address <= (WIDTH * (y - 2)) + last_wall_x + 1;
+							data <= FLOOR;
+						end else begin
+							//address <= (WIDTH * (y - 1)) + (rand % ((x - last_wall_x) / 2) * 2) + last_wall_x + 1;
+							address <= (WIDTH * (y - 2)) + ((rand % ((WIDTH - last_wall_x) / 2)) * 2) + last_wall_x + 1;
+							data <= FLOOR;
+						end
+						
+						
+						//address <= (WIDTH * (y - 2)) + ((rand % ((WIDTH - last_wall_x) / 2)) * 2) + last_wall_x + 1;
+						//data <= FLOOR;
 						
 						// Set cursor to be at the start of the next row
 						//x = -1;

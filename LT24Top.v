@@ -6,7 +6,9 @@ module LT24Top (
     // - Global Reset
     input              globalReset,
 	 
-	 input gen_start_sw,
+	 //input gen_start_sw,
+	 
+	 input		[3:0]							player_direction,
 	 
     // - Application Reset - for debug
     output             resetApp,
@@ -20,7 +22,10 @@ module LT24Top (
     output [     15:0] LT24_D,
     output             LT24_LCD_ON,
 	 
-	 output [9:0]		led_bus
+	output	[6:0]		segout_0,
+	output	[6:0]		segout_1,
+	output	[6:0]		segout_2,
+	output	[6:0]		segout_3
 );
 
 	localparam A = 3'b000;
@@ -60,27 +65,53 @@ localparam width = 30;
 
 //reg [(width * height)-1:0] maze_wire_reg;
 //wire [(width * height)-1:0] maze_wire;
-wire gen_start;
+//wire gen_start;
 //reg reset;
-wire gen_end;
-reg gen_end_reg;
+//wire gen_end;
+//reg gen_end_reg;
 reg [10:0] maze_tracker;
 wire maze_address_data;
 
 wire reset;
 //assign maze_wire_reg = maze_wire
 
-Maze_Maker # (
+wire	[7:0] player_x;
+wire	[7:0]	player_y;
+
+
+wire [3:0]	player_direction_neg;
+
+wire timer_end;
+
+SevenSegTimer # (
+	.MINS(5),
+	.SECS(0),
+	.CLK_F(50000000)
+) timer (
+	.clock(clock),
+	.reset(reset),
+	.timer_end(timer_end),
+	.segout_0(segout_0),
+	.segout_1(segout_1),
+	.segout_2(segout_2),
+	.segout_3(segout_3)
+	
+);
+
+Maze_Game # (
 	.WIDTH  (width  ),
 	.HEIGHT (height )
-) maze_maker(
-	.gen_start  			(gen_start				),
-	.seed						(11'b10101010101		),
+) maze_game(
+	//.gen_start  			(gen_start				),
+	//.seed					(11'b10101010101		),
+	.player_direction		(player_direction_neg),
 	.reset					(reset					),
 	.clock					(clock					),
 	.maze_address 			(maze_tracker			),
 	.maze_address_data	(maze_address_data	),
-	.gen_end					(gen_end					)
+	.player_x				(player_x				),
+	.player_y				(player_y				)
+	//.gen_end					(gen_end					)
 );
 
 
@@ -115,6 +146,8 @@ LT24Display #(
 wire [5:0] pixelAddress;
 wire [15: 0] floor_pixelInfo;
 wire [15: 0] wall_pixelInfo;
+wire [15: 0] character_pixelInfo;
+
 floor_rom floor_data(
 	.clock		  (clock),
 	.address		  (pixelAddress),
@@ -125,6 +158,12 @@ wall_rom wall_data(
 	.clock		  (clock),
 	.address		  (pixelAddress),
 	.q				  (wall_pixelInfo)
+);
+
+character_rom character_data(
+	.clock		  (clock),
+	.address		  (pixelAddress),
+	.q				  (character_pixelInfo)
 );
 
 assign pixelAddress = ((xAddr % 8)+((yAddr % 8)*8));
@@ -178,7 +217,7 @@ always @(posedge clock) begin
 			increment_cursor <= 1'b0;
 			maze_tracker <= 0;
 
-			if (resetApp == 1'b1 && gen_end == 1'b1) begin
+			if (resetApp == 1'b1) begin
 				state <= C;
 			end else begin
 				state <= A;
@@ -227,8 +266,12 @@ always @(posedge clock) begin
 				// Draw pixel
 				if (xAddr < (WIDTH - 1) && yAddr < (HEIGHT - 1)) begin
 				
-
-					if (maze_address_data == 1'b1) begin
+					if (player_x == xAddr / 8 && player_y == yAddr / 8) begin
+						pixelData <= character_pixelInfo;
+			
+					end
+					
+					else if (maze_address_data == 1'b1) begin
 						// Draw wall
 						// set the pixel data to black
 						/**
@@ -236,7 +279,8 @@ always @(posedge clock) begin
 						pixelData[10: 5] <= 6'b0;	// green pixel data
 						pixelData[4:0] <= 5'b0;	// set pixel data to zero
 						**/
-						pixelData <= wall_pixelInfo;
+						//pixelData <= wall_pixelInfo;
+						pixelData <= floor_pixelInfo;
 					end else begin
 						// Draw floor
 						/**
@@ -245,7 +289,8 @@ always @(posedge clock) begin
 						pixelData[10: 5] <= 6'b111111;	// green pixel data
 						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
 						**/
-						pixelData <= floor_pixelInfo;
+						//pixelData <= floor_pixelInfo;
+						pixelData <= wall_pixelInfo;
 					end
 					
 					
@@ -263,6 +308,7 @@ always @(posedge clock) begin
 end
 
 assign reset = ~globalReset;
-assign gen_start = ~gen_start_sw;
+assign player_direction_neg = ~player_direction;
+//assign gen_start = ~gen_start_sw;
 
 endmodule
