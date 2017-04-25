@@ -54,6 +54,7 @@ reg  [ 7:0] xAddr      ;
 reg  [ 8:0] yAddr      ;
 reg  [15:0] pixelData  ;
 wire        pixelReady ;
+reg			pixelWrite ;
 
 localparam WIDTH = 240;
 localparam HEIGHT = 320;
@@ -127,7 +128,7 @@ LT24Display #(
     .xAddr       (xAddr      ),
     .yAddr       (yAddr      ),
     .pixelData   (pixelData  ),
-    .pixelWrite  (1'b1 		  ),
+    .pixelWrite  (1'b1 ),
     .pixelReady  (pixelReady ),
 	 .pixelRawMode(1'b0       ),
     .cmdData     (8'b0       ),
@@ -196,18 +197,6 @@ always @ (posedge clock or posedge resetApp) begin
     end
 end
 
-// Maze tracker counter + registers
-//reg increment_maze_tracker;
-
-/*
-always @(posedge clock or posedge resetApp) begin
-	if (resetApp) begin
-		maze_tracker <= 11'd0;
-	end else if (increment_maze_tracker == 1'b1) begin
-		maze_tracker <= (xAddr / 8) + (width * (yAddr/ 8));
-	end
-end
-*/
 
 always @(posedge clock) begin
 	case(state)
@@ -261,36 +250,53 @@ always @(posedge clock) begin
 			
 			if (pixelReady == 1'b1) begin
 				increment_cursor <= 1'b0;
+				
+				
 				//increment_maze_tracker <= 1'b1;
 				
 				// Draw pixel
 				if (xAddr < (WIDTH - 1) && yAddr < (HEIGHT - 1)) begin
-				
+						
+						
 					if (player_x == xAddr / 8 && player_y == yAddr / 8) begin
-						pixelData <= character_pixelInfo;
+						
+						// draw character
+						
+						if (character_pixelInfo != 16'h07E0) begin
+							
+							//pixelData <= character_pixelInfo;
+							
+							// change character hair to blonde
+							if (character_pixelInfo == 16'h0) begin
+								pixelData <= 16'hFFE0;
+							end else begin
+								pixelData <= character_pixelInfo;
+							end
+							
+						end else begin		// color is green
+							
+							// draw a floor pixel in its place
+							pixelData <= wall_pixelInfo;
+
+						end
 			
 					end
 					
 					else if (maze_address_data == 1'b1) begin
 						// Draw wall
-						// set the pixel data to black
-						/**
-						pixelData[15:11] <= 5'b0;	// red pixel data
-						pixelData[10: 5] <= 6'b0;	// green pixel data
-						pixelData[4:0] <= 5'b0;	// set pixel data to zero
-						**/
-						//pixelData <= wall_pixelInfo;
 						pixelData <= floor_pixelInfo;
+						
 					end else begin
-						// Draw floor
-						/**
-						// set color to green
-						pixelData[15:11] <= 5'b00000;	// red pixel data
-						pixelData[10: 5] <= 6'b111111;	// green pixel data
-						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
-						**/
-						//pixelData <= floor_pixelInfo;
-						pixelData <= wall_pixelInfo;
+						
+						// check if its the end of the maze
+						if ( maze_tracker == ((width*height)-2)) begin
+							// draw the exit (green pixels)
+							pixelData <= 16'h07E0;
+						end else begin
+							// draw floor
+							pixelData <= wall_pixelInfo;
+						end
+						
 					end
 					
 					
