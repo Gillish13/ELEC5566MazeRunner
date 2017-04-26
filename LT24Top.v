@@ -25,7 +25,9 @@ module LT24Top (
 	output	[6:0]		segout_0,
 	output	[6:0]		segout_1,
 	output	[6:0]		segout_2,
-	output	[6:0]		segout_3
+	output	[6:0]		segout_3,
+	output	[6:0]		segout_4,
+	output	[6:0]		segout_5
 );
 
 	localparam A = 3'b000;
@@ -84,8 +86,12 @@ wire [3:0]	player_direction_neg;
 
 wire timer_end;
 
+wire [7:0]	mazes_complete;
+
+wire [7:0]	score_segs;
+
 SevenSegTimer # (
-	.MINS(5),
+	.MINS(1),
 	.SECS(0),
 	.CLK_F(50000000)
 ) timer (
@@ -108,15 +114,35 @@ Maze_Game # (
 	.player_direction		(player_direction_neg),
 	.reset					(reset					),
 	.clock					(clock					),
+	.timer_end				(timer_end				),
 	.maze_address 			(maze_tracker			),
 	.maze_address_data	(maze_address_data	),
 	.player_x				(player_x				),
-	.player_y				(player_y				)
+	.player_y				(player_y				),
+	.mazes_complete		(mazes_complete		)		
 	//.gen_end					(gen_end					)
 );
 
 
+// Display score on seven segs
+	NBitBinary_BCD # (
+		.WIDTH	(8),
+		.DIGITS	(2)
+	) sec_bcd (
+		.binary	(mazes_complete	),
+		.bcd		(score_segs			)
+	);
 
+	SevenSeg	seg4	(
+		.hex_in	(score_segs	[3:0]	),
+		.seg_out	(segout_4			)
+	);
+	
+	SevenSeg	seg5	(
+		.hex_in	(score_segs	[7:4]	),
+		.seg_out	(segout_5			)
+	);
+	
 LT24Display #(
     .WIDTH       (240        ),
     .HEIGHT      (320        ),
@@ -199,6 +225,7 @@ end
 
 
 always @(posedge clock) begin
+	
 	case(state)
 		// Do nothing
 		A : begin
@@ -257,50 +284,59 @@ always @(posedge clock) begin
 				// Draw pixel
 				if (xAddr < (WIDTH - 1) && yAddr < (HEIGHT - 1)) begin
 						
-						
-					if (player_x == xAddr / 8 && player_y == yAddr / 8) begin
-						
-						// draw character
-						
-						if (character_pixelInfo != 16'h07E0) begin
+					if (timer_end == 1'b0) begin
+					
+						if (player_x == xAddr / 8 && player_y == yAddr / 8) begin
 							
-							//pixelData <= character_pixelInfo;
+							// draw character
 							
-							// change character hair to blonde
-							if (character_pixelInfo == 16'h0) begin
-								pixelData <= 16'hFFE0;
-							end else begin
-								pixelData <= character_pixelInfo;
-							end
-							
-						end else begin		// color is green
-							
-							// draw a floor pixel in its place
-							pixelData <= wall_pixelInfo;
+							if (character_pixelInfo != 16'h07E0) begin
+								
+								//pixelData <= character_pixelInfo;
+								
+								// change character hair to blonde
+								if (character_pixelInfo == 16'h0) begin
+									pixelData <= 16'hFFE0;
+								end else begin
+									pixelData <= character_pixelInfo;
+								end
+								
+							end else begin		// color is green
+								
+								// draw a floor pixel in its place
+								pixelData <= wall_pixelInfo;
 
+							end
+				
 						end
-			
-					end
-					
-					else if (maze_address_data == 1'b1) begin
-						// Draw wall
-						pixelData <= floor_pixelInfo;
 						
-					end else begin
-						
-						// check if its the end of the maze
-						if ( maze_tracker == ((width*height)-2)) begin
-							// draw the exit (green pixels)
-							pixelData <= 16'h07E0;
+						else if (maze_address_data == 1'b1) begin
+							// Draw wall
+							pixelData <= floor_pixelInfo;
+							
 						end else begin
-							// draw floor
-							pixelData <= wall_pixelInfo;
+							
+							// check if its the end of the maze
+							if ( maze_tracker == ((width*height)-2)) begin
+								// draw the exit (green pixels)
+								pixelData <= 16'h07E0;
+							end else begin
+								// draw floor
+								pixelData <= wall_pixelInfo;
+							end
 						end
 						
-					end
+					end 
 					
+					// Timer has ended - draw black screen
+					else begin
+						pixelData <= 16'd0;
+						
+					end
 					
 					state <= B;
+
+					
 				end else begin
 					state <= B;
 				end
