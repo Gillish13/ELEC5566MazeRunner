@@ -8,7 +8,7 @@ module LT24Top (
 	 
 	 //input gen_start_sw,
 	 
-	 input		[3:0]							player_direction,
+	 //input		[3:0]							player_direction,
 	 
     // - Application Reset - for debug
     output             resetApp,
@@ -27,7 +27,10 @@ module LT24Top (
 	output	[6:0]		segout_2,
 	output	[6:0]		segout_3,
 	output	[6:0]		segout_4,
-	output	[6:0]		segout_5
+	output	[6:0]		segout_5,
+	
+	inout ps2_clk,
+	inout ps2_data
 );
 
 	localparam A = 3'b000;
@@ -82,7 +85,9 @@ wire	[7:0] player_x;
 wire	[7:0]	player_y;
 
 
-wire [3:0]	player_direction_neg;
+//wire [3:0]	player_direction_neg;
+
+wire [3:0] direction;
 
 wire timer_end;
 
@@ -105,13 +110,23 @@ SevenSegTimer # (
 	
 );
 
+wire ready;
+directions dir (
+	.clock(clock),
+	.reset(reset),
+	.ps2_clk(ps2_clk),
+	.ps2_data(ps2_data),
+	
+	.direction(direction)
+ );
+ 
 Maze_Game # (
 	.WIDTH  (width  ),
 	.HEIGHT (height )
 ) maze_game(
 	//.gen_start  			(gen_start				),
 	//.seed					(11'b10101010101		),
-	.player_direction		(player_direction_neg),
+	.player_direction		(direction),
 	.reset					(reset					),
 	.clock					(clock					),
 	.timer_end				(timer_end				),
@@ -350,7 +365,7 @@ always @(posedge clock) begin
 end
 
 assign reset = ~globalReset;
-assign player_direction_neg = ~player_direction;
+//assign player_direction_neg = ~player_direction;
 //assign gen_start = ~gen_start_sw;
 
 endmodule
