@@ -1,14 +1,15 @@
 module Timer # (
+	// Time for the timer to count down from
 	parameter MINS = 1,
 	parameter SECS = 0,
 	
 	parameter CLK_F = 50000000 // 50 MHz
 ) (
-	input 			clock,
-	input 			reset,
-	output			timer_end,
-	output	[5:0]	sec_out,
-	output	[5:0]	min_out
+	input 			clock, // Clock signal
+	input 			reset, // Reset signal
+	output			timer_end, // Set high when the timer finishes counting down
+	output	[5:0]	sec_out, // Value of the current number of seconds remaining
+	output	[5:0]	min_out // Value of the current number of minutes remaining
 );
 	
 	integer mins, secs, phase_increment;

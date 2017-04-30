@@ -1,25 +1,21 @@
 module Maze_Game # (
-	parameter WIDTH 	= 10,
-	parameter HEIGHT 	= 10
+	parameter WIDTH 	= 30,
+	parameter HEIGHT 	= 40
 )(
-	//input		[10:0]						seed,
-	input										reset,
-	input										clock,
-	
-	input										timer_end,
-	
-	input		[10:0]						maze_address,
-	
-	input		[3:0]							player_direction,
+	input					reset,
+	input					clock,
+	input					timer_end,
 
+	input		[10:0]	maze_address,
+
+	input		[3	:0]	player_direction,
+
+	output				maze_address_data,
 	
-	output									maze_address_data,
+	output	[7	:0]	player_x,
+	output	[7	:0]	player_y,
 	
-	
-	output	[7:0]	player_x,
-	output	[7:0]	player_y,
-	
-	output	[7:0]	mazes_complete
+	output	[7	:0]	mazes_complete
 	
 );
 
