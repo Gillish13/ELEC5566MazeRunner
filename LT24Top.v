@@ -1,4 +1,3 @@
-
 module LT24Top (
     //
     // Global Clock/Reset
@@ -6,6 +5,11 @@ module LT24Top (
     input              clock,
     // - Global Reset
     input              globalReset,
+	 
+	 //input gen_start_sw,
+	 
+	 //input		[3:0]							player_direction,
+	 
     // - Application Reset - for debug
     output             resetApp,
     //
@@ -16,8 +20,33 @@ module LT24Top (
     output             LT24_RS,
     output             LT24_RESETn,
     output [     15:0] LT24_D,
-    output             LT24_LCD_ON
+    output             LT24_LCD_ON,
+	 
+	output	[6:0]		segout_0,
+	output	[6:0]		segout_1,
+	output	[6:0]		segout_2,
+	output	[6:0]		segout_3,
+	output	[6:0]		segout_4,
+	output	[6:0]		segout_5,
+	
+	inout ps2_clk,
+	inout ps2_data
 );
+
+	localparam A = 3'b000;
+	localparam B = 3'b001;
+	localparam C = 3'b010;
+	localparam D = 3'b011;
+	localparam E = 3'b100;
+	localparam F = 3'b101;
+	localparam G = 3'b110;
+	
+	reg [2:0]	state;
+	//reg [2:0]	next_state;
+	
+// Flags
+reg startChar;	// sets the initial character
+reg charAlternator;	// alternates between characters
 
 reg  [7: 0] xCharOrigin		; // register to store character x origin
 reg  [8: 0] yCharOrigin		; // register to store character y origin
@@ -25,8 +54,6 @@ reg  [3: 0] charXCord	; // stores the character X coordinate
 reg	 [3: 0] charYCord	; // stores the character Y coordinate
 
 // Flags
-reg charComplete		; // set high when a character has been completed
-reg frameComplete		; // set high when a frame has been completed  
 
 reg  [ 7:0] xAddr      ;
 reg  [ 8:0] yAddr      ;
@@ -39,45 +66,110 @@ localparam HEIGHT = 320;
 
 // Maze making variables
 
-localparam height = 10;
-localparam width = 10;
+localparam height = 40;
+localparam width = 30;
 
 //reg [(width * height)-1:0] maze_wire_reg;
-wire [(width * height)-1:0] maze_wire;
-reg gen_start;
-reg reset;
-wire gen_end;
-reg gen_end_reg;
-reg [6:0] maze_tracker;
+//wire [(width * height)-1:0] maze_wire;
+//wire gen_start;
+//reg reset;
+//wire gen_end;
+//reg gen_end_reg;
+reg [10:0] maze_tracker;
+wire maze_address_data;
 
+wire reset;
 //assign maze_wire_reg = maze_wire
 
+wire	[7:0] player_x;
+wire	[7:0]	player_y;
 
 
-Maze_Maker # (
-	.WIDTH  (width  ),
-	.HEIGHT (height )
-) maze_maker(
-	.gen_start  (gen_start),
-	.seed			(8'b10101010),
-	.reset		(reset),
-	.clock		(clock),
-	.maze 		(maze_wire),
-	.gen_end		(gen_end)
+//wire [3:0]	player_direction_neg;
+
+wire [3:0] direction;
+
+wire timer_end;
+
+wire [7:0]	mazes_complete;
+
+wire [7:0]	score_segs;
+
+SevenSegTimer # (
+	.MINS(1),
+	.SECS(0),
+	.CLK_F(50000000)
+) timer (
+	.clock(clock),
+	.reset(reset),
+	.timer_end(timer_end),
+	.segout_0(segout_0),
+	.segout_1(segout_1),
+	.segout_2(segout_2),
+	.segout_3(segout_3)
+	
 );
 
+wire ready;
+directions dir (
+	.clock(clock),
+	.reset(reset),
+	.ps2_clk(ps2_clk),
+	.ps2_data(ps2_data),
+	
+	.direction(direction)
+ );
+ 
+Maze_Game # (
+	.WIDTH  (width  ),
+	.HEIGHT (height )
+) maze_game(
+	//.gen_start  			(gen_start				),
+	//.seed					(11'b10101010101		),
+	.player_direction		(direction),
+	.reset					(reset					),
+	.clock					(clock					),
+	.timer_end				(timer_end				),
+	.maze_address 			(maze_tracker			),
+	.maze_address_data	(maze_address_data	),
+	.player_x				(player_x				),
+	.player_y				(player_y				),
+	.mazes_complete		(mazes_complete		)		
+	//.gen_end					(gen_end					)
+);
+
+
+// Display score on seven segs
+	NBitBinary_BCD # (
+		.WIDTH	(8),
+		.DIGITS	(2)
+	) sec_bcd (
+		.binary	(mazes_complete	),
+		.bcd		(score_segs			)
+	);
+
+	SevenSeg	seg4	(
+		.hex_in	(score_segs	[3:0]	),
+		.seg_out	(segout_4			)
+	);
+	
+	SevenSeg	seg5	(
+		.hex_in	(score_segs	[7:4]	),
+		.seg_out	(segout_5			)
+	);
+	
 LT24Display #(
     .WIDTH       (240        ),
     .HEIGHT      (320        ),
     .CLOCK_FREQ  (50000000   )
 ) Display (
     .clock       (clock      ),
-    .globalReset (globalReset),
+    .globalReset (reset			),
     .resetApp    (resetApp   ),
     .xAddr       (xAddr      ),
     .yAddr       (yAddr      ),
     .pixelData   (pixelData  ),
-    .pixelWrite  (1'b1 		  ),
+    .pixelWrite  (1'b1 ),
     .pixelReady  (pixelReady ),
 	 .pixelRawMode(1'b0       ),
     .cmdData     (8'b0       ),
@@ -93,319 +185,187 @@ LT24Display #(
     .LT24_LCD_ON (LT24_LCD_ON)
 );
 
+wire [5:0] pixelAddress;
+wire [15: 0] floor_pixelInfo;
+wire [15: 0] wall_pixelInfo;
+wire [15: 0] character_pixelInfo;
 
+floor_rom floor_data(
+	.clock		  (clock),
+	.address		  (pixelAddress),
+	.q				  (floor_pixelInfo)
+);
 
+wall_rom wall_data(
+	.clock		  (clock),
+	.address		  (pixelAddress),
+	.q				  (wall_pixelInfo)
+);
 
+character_rom character_data(
+	.clock		  (clock),
+	.address		  (pixelAddress),
+	.q				  (character_pixelInfo)
+);
 
-// cursor counter
+assign pixelAddress = ((xAddr % 8)+((yAddr % 8)*8));
+
+reg increment_cursor;
+
+// X Counter
 always @ (posedge clock or posedge resetApp) begin
+    if (resetApp) begin
+        xAddr <= 8'b0;
+    end else if (pixelReady && increment_cursor == 1'b1) begin
+        if (xAddr < (WIDTH-1)) begin
+            xAddr <= xAddr + 8'd1;
+        end else begin
+            xAddr <= 8'b0;
+        end
+    end
+end
 
+// Y Counter
+always @ (posedge clock or posedge resetApp) begin
+    if (resetApp) begin
+        yAddr <= 9'b0;
+    end else if (pixelReady && (xAddr == (WIDTH-1)) && increment_cursor == 1'b1) begin
+        if (yAddr < (HEIGHT-1)) begin
+            yAddr <= yAddr + 9'd1;
+        end else begin
+            yAddr <= 9'b0;
+        end
+    end
+end
+
+
+always @(posedge clock) begin
 	
-	
-	if (resetApp) begin
-		// set cursor at the origin
-		yAddr <= 9'b0;	// set y coordinate to zero
-		xAddr <= 8'b0;	// set x coordinate to zero
-		
-		// reset characters
-		xCharOrigin <= 5'b0;
-		yCharOrigin <= 6'b0;
-		
-		//
-		charXCord <= 4'b0;
-		charYCord <= 4'b0;
-		
-		// reset flags
-		charComplete <= 1'b0;
-		frameComplete <= 1'b0;
-		startChar <= 1'b0;
-		pixelWrite <= 1'b1;
-		
-		// start the generation of the maze
-		// gen_start <= 1'b1;
-		//reset <= 1'b1;
-		if (reset) begin
-			reset <= 1'b0;
-		end else begin
-			reset <= 1'b1;
-		end
-		//if (reset == ) 
-		// reset the maze tracker
-		maze_tracker <= 11'b0;
-	end 
-	// ensure cursor is within bounds and LCD is ready to accept data 
-	else if (pixelReady && (xAddr < (WIDTH)) && (yAddr < (HEIGHT)) && gen_end) begin
-		
-		
-		if (charComplete == 0) begin
-		
-			
-			/**
-			// first check if there is a character already available
-			if (startChar == 0) begin // means there is no initial character
-				startChar <= 1'b1;
-				charAlternator <= 1'b1;
-			
-				// set the pixel data to black
-				pixelData[15:11] <= 5'b0;	// red pixel data
-				pixelData[10: 5] <= 6'b0;	// green pixel data
-				pixelData[4:0] <= 5'b0;	// set pixel data to zero
-			end
-			
-			**/
-			
-			if (startChar == 0) begin
-				startChar <= 1'b1;
-				// read the first value in the maze array
-				if (maze_wire[maze_tracker] == 0) begin
-					// set color to green
-					pixelData[15:11] <= 5'b00000;	// red pixel data
-					pixelData[10: 5] <= 6'b111111;	// green pixel data
-					pixelData[4:0] <= 5'b00000;	// set pixel data to zero
-				end else begin
-					// set the pixel data to black
-					pixelData[15:11] <= 5'b0;	// red pixel data
-					pixelData[10: 5] <= 6'b0;	// green pixel data
-					pixelData[4:0] <= 5'b0;	// set pixel data to zero
-			
-				end
-				maze_tracker <= maze_tracker + 1'b1;
-			end
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-		
-		end else if (charComplete == 1) begin
-			// get the next character
-			//pixelWrite <= 1'b1;
-		
-			
-		
-		
-		end
-	
-		if (charComplete == 0 ) begin	// move the cursor in character format
-			
-			if (charXCord == 8 && charYCord == 8) begin
-				//pixelWrite <= 1'b0;
-				
-						if (xAddr < (WIDTH-8)) begin
-					
-						// move character width
-						xCharOrigin <= xCharOrigin + 5'd8;
-					
-						//xAddr <= xCharOrigin;
-						//yAddr <= yCharOrigin;
-					
-						
-				
-						// reset character x coordinate
-						charXCord <= 4'b0;
-						// reset character y coordinate
-						charYCord <= 4'b0;
-					
-					
-						end else begin
-						//	pixelWrite <= 1'b1;
-							// move character width
-							xCharOrigin <= 5'd0;
-							yCharOrigin <= yCharOrigin + 6'd8;
-						
-							if (yAddr < (HEIGHT-8)) begin
-								yAddr <= yCharOrigin + 6'd8;
-								xAddr <= 5'd0;
-								// alternate the alternator
-								
-								if (charAlternator)begin
-									charAlternator <= 1'b0;
-								end else begin
-									charAlternator <= 1'b1;
-								end
-							end
-							
-							
-						
-							
-					
-							// reset character x coordinate
-							charXCord <= 4'b0;
-							// reset character y coordinate
-							charYCord <= 4'b0;
-					
-						end
-			
-					
-					
-					/**
-					charComplete <= 1'b1;
-					
-					
-					
-					
-					
-					// reset x address
-					// alternate pixel colors between black and white
-					if (charAlternator == 1) begin
-		
-						// set color to green
-						pixelData[15:11] <= 5'b00000;	// red pixel data
-						pixelData[10: 5] <= 6'b111111;	// green pixel data
-						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
-			
-						// reset flag
-						charAlternator <= 1'b0;
-					end else begin
-		
-						// set color to black
-						pixelData[15:11] <= 5'b0;	// red pixel data
-						pixelData[10: 5] <= 6'b0;	// green pixel data
-						pixelData[4:0] <= 5'b0;	// set pixel data to zero
-			
-		
-						// reset flag
-						charAlternator <= 1'b1;
-					end
-					**/
-					
-					
-					
-					// reset x address
-					// alternate pixel colors between black and white
-					if (maze_wire[maze_tracker] == 0) begin
-		
-						// set color to green
-						pixelData[15:11] <= 5'b00000;	// red pixel data
-						pixelData[10: 5] <= 6'b111111;	// green pixel data
-						pixelData[4:0] <= 5'b00000;	// set pixel data to zero
-			
-						// reset flag
-						charAlternator <= 1'b0;
-					end else begin
-		
-						// set color to black
-						pixelData[15:11] <= 5'b0;	// red pixel data
-						pixelData[10: 5] <= 6'b0;	// green pixel data
-						pixelData[4:0] <= 5'b0;	// set pixel data to zero
-			
-		
-						// reset flag
-						charAlternator <= 1'b1;
-					end
-					
-					maze_tracker <= maze_tracker + 1'b1;
-					
-					
-		
-					// reset flag
-					charComplete <= 1'b0;
-				
-					
-					if (xAddr < (WIDTH-8)) begin
-						xAddr <= xCharOrigin + 5'd8;
-						yAddr <= yCharOrigin;
-					end 
-				 
-					
-					
-					
-				
-					
-					
-					//pixelWrite <= 1'b1;
-					
-					
-			end else if (charXCord == 8) begin
-					xAddr <= xCharOrigin;		// place x coordinate cursor at x origin of character
-				
-					// reset character x coordinate to origin
-					charXCord <= 4'b0;
-					yAddr <= charYCord + yCharOrigin;
-					charYCord <= charYCord + 4'b1;
+	case(state)
+		// Do nothing
+		A : begin
+			//increment_maze_tracker <= 1'b0;
+			increment_cursor <= 1'b0;
+			maze_tracker <= 0;
+
+			if (resetApp == 1'b1) begin
+				state <= C;
 			end else begin
-					if (xAddr < (WIDTH)) begin
-						xAddr <= charXCord + xCharOrigin;
-						charXCord <= charXCord + 4'b1;
+				state <= A;
+			end
+		end
+		
+		// Request data
+		B : begin
+			if (xAddr < WIDTH - 1 && yAddr < HEIGHT - 1) begin
+				maze_tracker <= ((xAddr + 1) / 8) + (width * ((yAddr + 1) / 8));
+			end else if (yAddr < HEIGHT - 1) begin
+				maze_tracker <= (width * ((yAddr + 1) / 8));
+			end else begin
+				maze_tracker <= 0;
+			end
+			
+			state <= E;
+		end
+		
+		// Wait to recieve data
+		E : begin
+			state <= F;
+		end
+		
+		F : begin
+			state <= G;
+		end
+		
+		G : begin
+			state <= C;
+		end
+		
+		// Wait to recieve data + begin to increment cursor
+		C : begin
+			increment_cursor <= 1'b1;
+			state <= D;
+		end
+		
+		// Draw pixel if ready + stop incrementing the cursor + begin requesting maze data
+		D : begin
+			
+			if (pixelReady == 1'b1) begin
+				increment_cursor <= 1'b0;
+				
+				
+				//increment_maze_tracker <= 1'b1;
+				
+				// Draw pixel
+				if (xAddr < (WIDTH - 1) && yAddr < (HEIGHT - 1)) begin
+						
+					if (timer_end == 1'b0) begin
+					
+						if (player_x == xAddr / 8 && player_y == yAddr / 8) begin
+							
+							// draw character
+							
+							if (character_pixelInfo != 16'h07E0) begin
+								
+								//pixelData <= character_pixelInfo;
+								
+								// change character hair to blonde
+								if (character_pixelInfo == 16'h0) begin
+									pixelData <= 16'hFFE0;
+								end else begin
+									pixelData <= character_pixelInfo;
+								end
+								
+							end else begin		// color is green
+								
+								// draw a floor pixel in its place
+								pixelData <= wall_pixelInfo;
+
+							end
+				
+						end
+						
+						else if (maze_address_data == 1'b1) begin
+							// Draw wall
+							pixelData <= floor_pixelInfo;
+							
+						end else begin
+							
+							// check if its the end of the maze
+							if ( maze_tracker == ((width*height)-2)) begin
+								// draw the exit (green pixels)
+								pixelData <= 16'h07E0;
+							end else begin
+								// draw floor
+								pixelData <= wall_pixelInfo;
+							end
+						end
+						
+					end 
+					
+					// Timer has ended - draw black screen
+					else begin
+						pixelData <= 16'd0;
+						
 					end
-			end
-		end 
+					
+					state <= B;
 
-	end else if (pixelReady && (xAddr == (WIDTH-1))) begin
-	
-			/**
-				
-			
-			// move to the character below
-			yCharOrigin <= yCharOrigin + 6'd8;
-			
-			// set y pixel coordinate to character origin
-			yAddr <= yCharOrigin + 6'd8;
-			
-			
-				
-			if(yCharOrigin > (HEIGHT-8)) begin	// FRAME IS COMPLETE, reset all variables for new frame
-				
-				frameComplete <= 1'b1;
-				
-				// reset character position
-				yCharOrigin <= 6'b0;
-				xCharOrigin <= 5'b0;
-				
-				// reset cursor
-				xAddr <= 8'b0;
-				yAddr <= 9'b0;
-				
-				// reset character coordinates
-				charXCord <= 4'b0;
-				charYCord <= 4'b0;
-			
-				
+					
+				end else begin
+					state <= B;
+				end
+			end else begin
+				// Keep in this state until pixel is ready to be drawn
+				state <= D;
 			end
-			
-			**/
-			
-			
-
-	end
-	
-	
+		end
+		
+	endcase
 end
 
-
-// Flags
-reg startChar;	// sets the initial character
-reg charAlternator;	// alternates between characters
-
-/**
-
-initial begin
-	// set cursor at the origin
-		yAddr <= 9'b0;	// set y coordinate to zero
-		xAddr <= 8'b0;	// set x coordinate to zero
-		
-		// reset characters
-		xCharOrigin <= 5'b0;
-		yCharOrigin <= 6'b0;
-		
-		// reset flags
-		charComplete <= 1'b0;
-		frameComplete <= 1'b0;
-		startChar <= 1'b0;
-end
-
-**/
-
-
-
-
-
+assign reset = ~globalReset;
+//assign player_direction_neg = ~player_direction;
+//assign gen_start = ~gen_start_sw;
 
 endmodule

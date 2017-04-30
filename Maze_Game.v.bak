@@ -1,0 +1,64 @@
+module Maze_Game # (
+	parameter WIDTH 	= 10,
+	parameter HEIGHT 	= 10
+)(
+	input		[3:0]							player_direction,
+	input		[10:0]						seed,
+	input										reset,
+	input										clock,
+	
+	//output									gen_end,
+	output	[(WIDTH * HEIGHT)-1:0]	maze
+
+);
+	
+	wire	[(WIDTH * HEIGHT)-1:0]	maze_wire;
+	
+	wire	[7:0]	player_x;
+	wire	[7:0]	player_y;
+	
+	wire reset_player;
+	wire player_at_end;
+	wire	gen_start;
+
+	
+	//reg 	clock;
+	wire	gen_end;
+	
+	
+	Maze_Input # (
+		.WIDTH	(WIDTH	),
+		.HEIGHT	(HEIGHT	)
+	) maze_input (
+		.player_direction	(player_direction	),
+		.maze					(maze_wire			),
+		.at_start			(reset_player		),
+		.player_x			(player_x			),
+		.player_y			(player_y			),
+		.at_end				(player_at_end		)
+	);
+	
+	Maze_Maker # (
+		.WIDTH	(WIDTH	),
+		.HEIGHT	(HEIGHT	)
+	) maze_maker(
+		.gen_start	(gen_start),
+		.seed			(seed),
+		.reset		(reset),
+		.clock		(clock),
+		.maze			(maze_wire),
+		.gen_end		(gen_end)
+	);
+	
+	/*
+	// Set up clock signal
+	always begin
+		clock = ~clock;
+	end
+	*/
+	
+	assign reset_player = !gen_end;
+	assign gen_start = player_at_end;
+	assign maze = maze_wire;
+	
+endmodule

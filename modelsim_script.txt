@@ -1,0 +1,11 @@
+force -freeze sim:/Maze_Maker/seed 10101010101 0
+force -freeze sim:/Maze_Maker/reset 1 0 -cancel 100
+force -freeze sim:/Maze_Maker/clock 1 0, 0 {50 ps} -r 100
+add wave -position insertpoint  \
+sim:/Maze_Maker/gen_end
+add wave -position insertpoint  \
+sim:/Maze_Maker/x
+add wave -position insertpoint  \
+sim:/Maze_Maker/y
+run 250000
+examine sim:/Maze_Maker/maze_ram/altsyncram_component/mem_data
