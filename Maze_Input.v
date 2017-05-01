@@ -48,7 +48,8 @@ module Maze_Input # (
 		if (at_start == 1'b1) begin
 			x_reg <= 8'd0;
 			y_reg <= 8'd0;
-			end_reg <= 1'b0;	
+			end_reg <= 1'b0;
+			state <= A; // Reset state machine
 		end
 		
 		// Check if the player is at the exit
