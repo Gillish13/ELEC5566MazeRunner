@@ -1,12 +1,12 @@
 module LFSR_11_Bit (
 	input 	[10:0]	seed, // Number to initialise the PRNG
-	input					clock, // Clock signal
-	input					reset, // Reset signal
+	input		clock, // Clock signal
+	input		reset, // Reset signal
 	output	[10:0]	out // Current state of the PRNG
 );
 
 	reg	[10:0]	buffer;
-	reg				bit_one;
+	reg		bit_one;
 	
 	// Every clock cycle or when a reset occurs
 	always @(posedge clock or posedge reset)
