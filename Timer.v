@@ -5,9 +5,9 @@ module Timer # (
 	
 	parameter CLK_F = 50000000 // 50 MHz
 ) (
-	input 			clock, // Clock signal
-	input 			reset, // Reset signal
-	output			timer_end, // Set high when the timer finishes counting down
+	input 		clock, // Clock signal
+	input 		reset, // Reset signal
+	output		timer_end, // Set high when the timer finishes counting down
 	output	[5:0]	sec_out, // Value of the current number of seconds remaining
 	output	[5:0]	min_out // Value of the current number of minutes remaining
 );
