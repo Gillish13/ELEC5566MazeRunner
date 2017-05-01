@@ -13,7 +13,7 @@ module Maze_Maker_tb;
 	integer 			i;
 	reg 		[1199:0] 	maze_output;
 
-	// Instantiate Device Under Test (DUT) from Quad_nA_AND_B verilog file.
+	// Instantiate Device Under Test (DUT).
 	Maze_Maker #
 	(
 		.WIDTH	(30),
