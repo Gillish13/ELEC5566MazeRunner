@@ -2,20 +2,15 @@ module Maze_Input # (
 	parameter WIDTH = 10,
 	parameter HEIGHT = 10
 )(
-	input 				clock, // Clock signal
-
-
-	input		[3	:0]	player_direction, // The player's direction input
-	input					at_start, // Sets the player's position to be (0,0) when this is high
-	
-	input					maze_input_data, // Data from the maze's RAM module at address 'maze_input_address'
+	input 			clock, // Clock signal
+	input	[3	:0]	player_direction, // The player's direction input
+	input			at_start, // Sets the player's position to be (0,0) when this is high
+	input			maze_input_data, // Data from the maze's RAM module at address 'maze_input_address'
 
 	output	[7	:0]	player_x, // The player's current x position
 	output	[7	:0]	player_y, // The players current y position
-
-	output	[10:0]	maze_input_address, // The address in the maze RAM to request data from
-
-	output				at_end // Set high when the player reaches the exit tile
+	output	[10	:0]	maze_input_address, // The address in the maze RAM to request data from
+	output			at_end // Set high when the player reaches the exit tile
 );
 	// Localparams used by the state machine
 	localparam A = 3'b000;
@@ -31,21 +26,21 @@ module Maze_Input # (
 	localparam UP 		= 4'b0001;
 	localparam DOWN 	= 4'b0010;
 	localparam RIGHT	= 4'b0100;
-	localparam LEFT	= 4'b1000;
+	localparam LEFT		= 4'b1000;
 	
 	// Localparams used to interpret tile information from the maze RAM
 	localparam FLOOR	= 1'b0;
 	localparam WALL 	= 1'b1;
 	
-	reg	[3:0]		prev_direction;
+	reg	[3:0]	prev_direction;
 	reg	[3:0] 	requested_direction;
 	
-	reg 	[7:0]		x_reg; // Stores the x position of the player
-	reg	[7:0]		y_reg; // Stores the y position of the player
+	reg 	[7	:0]	x_reg; // Stores the x position of the player
+	reg	[7	:0]	y_reg; // Stores the y position of the player
 	
-	reg	[10:0]	maze_input_address_reg;
+	reg	[10	:0]	maze_input_address_reg;
 	
-	reg				end_reg;
+	reg			end_reg;
 	
 	
 	always @(posedge clock) begin
