@@ -24,15 +24,15 @@ module Maze_Game_tb;
 		.HEIGHT	(2)
 	) DUT (
 		// Port map - connection between master ports and signals/registers   
-		.timer_end 		(timer_end			),
-		.clock			(clock 				),
-		.reset			(reset				),
+		.timer_end 		(timer_end		),
+		.clock			(clock 			),
+		.reset			(reset			),
 		.maze_address 		(maze_address 		),
 		.maze_address_data	(maze_address_data	),
 		.player_direction	(player_direction	),
-		.player_x		(player_x			),
-		.player_y		(player_y			),
-		.gen_end		(gen_end			),
+		.player_x		(player_x		),
+		.player_y		(player_y		),
+		.gen_end		(gen_end		),
 		.mazes_complete		(mazes_complete		)	
 	);
 
