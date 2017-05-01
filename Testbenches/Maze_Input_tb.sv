@@ -13,7 +13,7 @@ module Maze_Input_tb;
 	wire	[7	:0]	player_y;
 	wire			at_end;
 
-	// Instantiate Device Under Test (DUT) from Quad_nA_AND_B verilog file.
+	// Instantiate Device Under Test (DUT).
 	Maze_Input # (
 			.WIDTH	(5),
 			.HEIGHT	(5)
