@@ -4,13 +4,13 @@
 module Maze_Maker_tb;
 	
 	// This register acts as a local variable for the input to the DUT.
-	reg  					clock;
-	reg  					reset;
+	reg  				clock;
+	reg  				reset;
 	reg 		[10:0]		maze_address;
-	wire 					maze_address_data;
-	wire 					gen_end;
+	wire 				maze_address_data;
+	wire 				gen_end;
 
-	integer 				i;
+	integer 			i;
 	reg 		[1199:0] 	maze_output;
 
 	// Instantiate Device Under Test (DUT) from Quad_nA_AND_B verilog file.
@@ -20,14 +20,14 @@ module Maze_Maker_tb;
 		.HEIGHT	(40)
 	) DUT (
 		// Port map - connection between master ports and signals/registers   
-		.seed				(11'b10101010101	),
-		.gen_start 			(1'b0 				),
-		.clock				(clock 				),
-		.reset				(reset				),
+		.seed			(11'b10101010101	),
+		.gen_start 		(1'b0 			),
+		.clock			(clock 			),
+		.reset			(reset			),
 		.maze_address 		(maze_address 		),
-		.maze_input_address (11'b00000000000	),
+		.maze_input_address 	(11'b00000000000	),
 		.maze_address_data	(maze_address_data	),
-		.gen_end			(gen_end			)	
+		.gen_end		(gen_end		)	
 	);
 	
 
