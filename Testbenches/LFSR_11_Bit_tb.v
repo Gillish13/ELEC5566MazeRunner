@@ -11,7 +11,7 @@ module LFSR_11_Bit_tb;
 	reg 		clock;
 	reg 		reset;
 
-	// Instantiate Device Under Test (DUT) from Quad_nA_AND_B verilog file.
+	// Instantiate Device Under Test (DUT).
 	LFSR_11_Bit DUT (
 		// Port map - connection between master ports and signals/registers   
 		.seed	(11'b10101010101	),
