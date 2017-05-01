@@ -3,13 +3,13 @@
 
 module Timer_tb;
 	
-	reg 			clock;
-	reg 			reset;
+	reg 		clock;
+	reg 		reset;
 	wire 	[5:0] 	sec_out;
 	wire 	[5:0] 	min_out;
-	wire			timer_end;
+	wire		timer_end;
 
-	integer 		i;
+	integer 	i;
 
 	// Instantiate Device Under Test (DUT).
 	Timer # (
@@ -49,8 +49,3 @@ module Timer_tb;
 	end
 	
 endmodule
-
-
-
-
-
