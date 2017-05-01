@@ -3,19 +3,19 @@ module Maze_Maker # (
 	parameter WIDTH = 30,
 	parameter HEIGHT = 40
 )(
-	input 				gen_start, // Maze will begin generating when high
+	input 			gen_start, // Maze will begin generating when high
 	
 	input		[10:0]	seed,	// Seed for the PRNG
-	input					reset, // Reset signal
-	input					clock, // Clock signal
+	input			reset, // Reset signal
+	input			clock, // Clock signal
 	
 	input		[10:0]	maze_address, // RAM address to access the maze. Used by the LCD to get a tile
 	input		[10:0]	maze_input_address, // RAM address to access the maze. Used by the player input module
 	
-	output				maze_address_data, // Data in the RAM address accessed by 'maze_address'
-	output 				maze_input_data, // Data in the RAM address accessed by 'maze_input_address'
+	output			maze_address_data, // Data in the RAM address accessed by 'maze_address'
+	output 			maze_input_data, // Data in the RAM address accessed by 'maze_input_address'
 	
-	output				gen_end // Set high when a maze has finished generating
+	output			gen_end // Set high when a maze has finished generating
 );
 	// Localparams for the state machine
 	localparam A = 3'b000;
@@ -35,33 +35,33 @@ module Maze_Maker # (
 	
 	integer x, y, last_wall_x;
 	
-	reg 	make_opening;
-	reg	finished;
+	reg 		make_opening;
+	reg		finished;
 	
 	wire	[10:0]	rand;
 	
 	// RAM registers
 	reg	[10:0]	address;
-	reg				data;
-	reg				wren;
+	reg		data;
+	reg		wren;
 	
 	LFSR_11_Bit prng (
-		.seed		(seed		),
+		.seed	(seed	),
 		.reset	(reset	),
 		.clock	(clock	),
-		.out		(rand		)
+		.out	(rand	)
 	);
 	
 	
 	RAM maze_ram (
-		.address_a	(address					),
+		.address_a	(address		),
 		.address_b	(maze_input_address	),
-		.clock		(clock					),
-		.data_a		(data						),
-		.wren_a		(wren						),
-		.wren_b		(1'b0						),
-		.q_a			(maze_address_data	),
-		.q_b			(maze_input_data		)
+		.clock		(clock			),
+		.data_a		(data			),
+		.wren_a		(wren			),
+		.wren_b		(1'b0			),
+		.q_a		(maze_address_data	),
+		.q_b		(maze_input_data	)
 	);
 	
 	reg increment;
@@ -85,10 +85,10 @@ module Maze_Maker # (
 			y <= 0;
 		end else if (increment == 1'b1 && x == (WIDTH - 1)) begin
 			if (y < (HEIGHT)) begin
-            y <= y + 32'd1;
-        end else begin
-            y <= 32'b0;
-        end
+            			y <= y + 32'd1;
+        		end else begin
+           			y <= 32'b0;
+        		end
 		end
 	end
 	
@@ -182,7 +182,6 @@ module Maze_Maker # (
 							address <= (WIDTH * (y - 2)) + ((rand % ((WIDTH - last_wall_x) / 2)) * 2) + last_wall_x + 1;
 							data <= FLOOR;
 						end
-						
 					end
 					
 					
@@ -195,7 +194,6 @@ module Maze_Maker # (
 						//x = x + 32'd1;
 						state <= D; // Move to the next state
 					end
-					
 				end
 				
 				// Set up the last_wall_x value and begin incrementing
