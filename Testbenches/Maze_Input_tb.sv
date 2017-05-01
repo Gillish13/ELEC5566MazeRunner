@@ -104,7 +104,7 @@ module Maze_Input_tb;
 
 		// Move right three times
 		for (j = 32'd0; j < 32'd3; j = j + 32'd1) begin
-			player_direction = 4'b0100; // Move down
+			player_direction = 4'b0100; // Move right
 
 			// Wait a few clock cycles
 			for (i = 32'd0; i < 32'd8; i = i + 32'd1) begin
