@@ -4,11 +4,9 @@
 module LFSR_11_Bit_tb;
 	
 	// This register acts as a local variable for the input to the DUT.
-	//reg 	[11:0]	input_tests;
 	wire 	[10:0] 	output_tests;
 
-	reg 		pass; // Variable to store whether the test has passed or failed
-	integer 	iterations;
+	integer 	iterations; // Used by the for loop
 
 	reg 		clock;
 	reg 		reset;
