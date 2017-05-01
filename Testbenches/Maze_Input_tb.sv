@@ -143,6 +143,24 @@ module Maze_Input_tb;
 			$display("Test failed!");
 		end
 
+		$display("Checking that the player can't walk through walls...");
+		maze_input_data = 1'b1;
+
+		player_direction = 4'b0100; // Move right
+
+		// Wait a few clock cycles
+		for (i = 32'd0; i < 32'd8; i = i + 32'd1) begin
+			clock = ~clock;
+			#20;
+		end
+
+		if (player_x == 8'd0 && player_y == 8'd0) begin
+			$display("Test passed!");
+		end else begin
+			$display("Test failed!");
+		end
+
+
 	end
 	
 endmodule
