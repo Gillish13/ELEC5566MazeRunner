@@ -96,7 +96,7 @@ wire [7:0]	mazes_complete;
 wire [7:0]	score_segs;
 
 SevenSegTimer # (
-	.MINS(1),
+	.MINS(3),
 	.SECS(0),
 	.CLK_F(50000000)
 ) timer (
